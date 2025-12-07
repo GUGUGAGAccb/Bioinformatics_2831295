@@ -138,7 +138,7 @@ The script automatically:
 * trims sequence length to full codons
 * translates using **genetic code table 2**
 * writes output as `<name>_protein.fasta`
-
+### AI was using here to fix some bug when running
 ---
 
 ## 6. Multiple Sequence Alignment
