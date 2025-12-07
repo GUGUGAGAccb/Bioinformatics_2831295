@@ -1,72 +1,69 @@
+# Step 1: Import libraries
 import glob
 import os
-
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
 
 
-def translate_fasta(input_fasta: str,
-                    output_fasta: str,
-                    translation_table: int = 2,
-                    trim_to_codon: bool = True) -> None:
+# Step 2: Define a function that reads a FASTA file and translates the DNA
+def translate_fasta_file(input_file, output_file, table_id=2):
     """
-    Translate DNA sequences in a FASTA file into amino acid sequences.
-
-    :param input_fasta: Path to input DNA FASTA file.
-    :param output_fasta: Path to output protein FASTA file.
-    :param translation_table: NCBI genetic code table ID.
-    :param trim_to_codon: If True, trim to multiple of 3.
+    Read a FASTA file, translate each DNA sequence into protein,
+    then save the result into a new FASTA file.
     """
 
-    protein_records = []
+    protein_list = []  # this will store all translated records
 
-    for record in SeqIO.parse(input_fasta, "fasta"):
-        seq = record.seq.upper()
+    # Step 2.1: Go through every record in the FASTA file
+    for record in SeqIO.parse(input_file, "fasta"):
 
-        # Trim sequence to full codons if requested
-        if trim_to_codon:
-            codon_len = len(seq) - (len(seq) % 3)
-            seq = seq[:codon_len]
+        # make the sequence uppercase (A, T, C, G)
+        dna_seq = record.seq.upper()
 
-        protein_seq = seq.translate(table=translation_table, to_stop=False)
+        # trim the sequence so its length is divisible by 3
+        if len(dna_seq) % 3 != 0:
+            trim_size = len(dna_seq) - (len(dna_seq) % 3)
+            dna_seq = dna_seq[:trim_size]
 
-        protein_records.append(
-            SeqRecord(
-                protein_seq,
-                id=record.id,
-                description=f"translated (table={translation_table})"
-            )
+        # Step 2.2: Translate using Biopython
+        protein_seq = dna_seq.translate(table=table_id, to_stop=False)
+
+        # Step 2.3: Create a new sequence record for the translated protein
+        new_record = SeqRecord(
+            protein_seq,
+            id=record.id,
+            description="translated using table {}".format(table_id)
         )
+        protein_list.append(new_record)
 
-    SeqIO.write(protein_records, output_fasta, "fasta")
-    print(f"Translated {len(protein_records)} sequences -> {output_fasta}")
+    # Step 2.4: Write all translated sequences to a new FASTA file
+    SeqIO.write(protein_list, output_file, "fasta")
+
+    print("Translated {} sequences into {}".format(len(protein_list), output_file))
 
 
+# Step 3: Main program
 if __name__ == "__main__":
 
-    # Directory containing FASTA files
-    input_dir = "/Users/lyy/Downloads"
+    # Step 3.1: Tell the script where to find the input FASTA files
+    folder = "/Users/lyy/Desktop/Bioinformatics/Ref_Seq"
 
-    # Find all .fasta files in the directory
-    fasta_files = glob.glob(os.path.join(input_dir, "*.fasta"))
+    # Step 3.2: Look for files that end with .fasta
+    fasta_files = glob.glob(os.path.join(folder, "*.fasta"))
 
-    if not fasta_files:
-        print("No FASTA files found in the directory.")
-        exit()
+    # Step 3.3: Check if we found anything
+    if len(fasta_files) == 0:
+        print("No FASTA files found.")
+    else:
+        print("Found {} FASTA files".format(len(fasta_files)))
 
-    print(f"Found {len(fasta_files)} FASTA files")
+        # Step 3.4: Translate every file we found
+        for f in fasta_files:
+            name, ext = os.path.splitext(f)
+            out_name = name + "_protein.fasta"
 
-    # Use genetic code table 2
-    translation_table_id = 2
-
-    for fasta_file in fasta_files:
-        base, ext = os.path.splitext(fasta_file)
-        output_file = f"{base}_protein.fasta"
-
-        translate_fasta(
-            input_fasta=fasta_file,
-            output_fasta=output_file,
-            translation_table=translation_table_id,
-            trim_to_codon=True
-        )
-
+            translate_fasta_file(
+                input_file=f,
+                output_file=out_name,
+                table_id=2  # use genetic code table 2
+            )
